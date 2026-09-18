@@ -28,27 +28,24 @@
       <button id="letter-close" class="btn-primary small">Rahmat 💕</button>
     </div>
   </div>
-  <!-- ================= ONBOARDING ================= -->
-  <section id="onboarding" class="screen onboarding hidden">
+  <!-- ================= LOGIN ================= -->
+  <section id="login" class="screen onboarding hidden">
     <div class="onb-card">
       <div class="onb-logo">💞</div>
       <h1 class="onb-title">Lovora</h1>
-      <p class="onb-sub">Ikkovingizga atalgan maxsus makon</p>
+      <p class="onb-sub">Kirish uchun login va parolni kiriting</p>
 
       <label class="field">
-        <span>Sizning ismingiz</span>
-        <input id="onb-me" type="text" maxlength="20" placeholder="Masalan: Aziz" />
+        <span>Login</span>
+        <input id="login-user" type="text" autocomplete="username" placeholder="Login" />
       </label>
       <label class="field">
-        <span>Yoringizning ismi</span>
-        <input id="onb-partner" type="text" maxlength="20" placeholder="Masalan: Malika" />
-      </label>
-      <label class="field">
-        <span>Munosabatlar boshlangan sana</span>
-        <input id="onb-date" type="date" />
+        <span>Parol</span>
+        <input id="login-pass" type="password" autocomplete="current-password" placeholder="Parol" />
       </label>
 
-      <button id="onb-start" class="btn-primary">Boshlaymiz 💕</button>
+      <p id="login-error" class="login-error hidden">Login yoki parol noto'g'ri</p>
+      <button id="login-btn" class="btn-primary">Kirish 💕</button>
     </div>
   </section>
 
@@ -86,15 +83,6 @@
         <button class="quick" data-go="notes"><span>💌</span>Sevgi xati</button>
         <button class="quick" data-go="memories"><span>📸</span>Xotiralar</button>
         <button class="quick" data-go="games"><span>🎮</span>O'yin</button>
-      </div>
-
-      <!-- Sirli sovg'a -->
-      <div id="surprise-card" class="surprise-card hidden">
-        <div class="surprise-glow"></div>
-        <p class="surprise-emoji">🎁</p>
-        <p class="surprise-title" id="surprise-title">Sirli sovg'a</p>
-        <p class="surprise-sub" id="surprise-sub"></p>
-        <button id="surprise-btn" class="btn-primary small hidden">Ochish 🎉</button>
       </div>
 
       <!-- Bizning qo'shig'imiz -->
@@ -163,7 +151,7 @@
     <!-- ---------- GAMES ---------- -->
     <section id="view-games" class="view hidden">
       <h2 class="view-title">🎮 Ikki kishilik o'yin</h2>
-      <p class="games-hint">Tic-Tac-Toe — bitta telefonda navbatma-navbat o'ynang</p>
+      <p class="games-hint">Tic-Tac-Toe — ikki telefonda jonli o'ynaladi 🌐</p>
       <div class="ttt-score">
         <span id="ttt-p1">❌ 0</span>
         <span id="ttt-turn">Navbat: ❌</span>
@@ -194,23 +182,12 @@
       <button id="set-save" class="btn-primary small">Saqlash</button>
 
       <div class="pair-box">
-        <h4>💑 Juftlikni ulash</h4>
-        <p id="pair-status" class="pair-status">Ulanmagan — ikki qurilmani birlashtiring</p>
-
-        <div id="pair-code-view" class="pair-code-view hidden">
-          <p class="pair-hint">Yoringizga shu kodni bering:</p>
-          <p class="pair-code" id="pair-code">------</p>
-        </div>
-
-        <button id="pair-create" class="btn-primary small">Juftlik kodi yaratish</button>
-        <div class="pair-join">
-          <input id="pair-input" type="text" maxlength="6" placeholder="Kod (masalan: K7M2QX)" />
-          <button id="pair-join-btn" class="btn-ghost small">Ulanish</button>
-        </div>
-        <button id="pair-leave" class="btn-danger small hidden">Ulanishni uzish</button>
+        <h4>💑 Ulanish holati</h4>
+        <p id="pair-status" class="pair-status">Ulanmagan</p>
+        <p id="pair-iam" class="pair-status"></p>
       </div>
 
-      <button id="set-reset" class="btn-danger small">Hammasini o'chirish</button>
+      <button id="set-logout" class="btn-danger small">Chiqish (login)</button>
       <button id="set-close" class="btn-ghost small">Yopish</button>
     </div>
   </div>
@@ -222,16 +199,6 @@
       <p style="color:var(--text-soft);font-size:14px;margin-bottom:18px">Shunda yozgan javob va xatlaringiz kimniki ekani ko'rinadi</p>
       <button id="id-btn-me" class="btn-primary small" style="width:100%;margin-bottom:10px">Men</button>
       <button id="id-btn-partner" class="btn-ghost small" style="width:100%">Yor</button>
-    </div>
-  </div>
-
-  <!-- Sirli sovg'a ochilganda -->
-  <div id="surprise-modal" class="surprise-modal hidden">
-    <div class="surprise-reveal">
-      <p class="surprise-emoji big">🎁</p>
-      <h3 id="sr-title"></h3>
-      <p id="sr-message" class="sr-message"></p>
-      <button id="sr-close" class="btn-primary small">💖</button>
     </div>
   </div>
 

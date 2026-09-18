@@ -12,6 +12,15 @@ const ROOT = __dirname;
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
+// ---------- Login (parol serverda, kodda ochiq emas) ----------
+// Railway'da Variables orqali o'zgartiring: AUTH_USER, AUTH_PASS
+const AUTH = {
+  user: process.env.AUTH_USER || "osiyo",
+  pass: process.env.AUTH_PASS || "lovora2026",
+};
+// Ikkalangiz uchun yagona (avtomatik) xona
+const COUPLE_ROOM = process.env.COUPLE_ROOM || "LOVORA1";
+
 // ---------- Statik server ----------
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -177,6 +186,24 @@ wss.on("connection", (ws) => {
       room.clients.add(ws);
       ws.coupleId = id;
       safeSend(ws, JSON.stringify({ type: "state", coupleId: id, state: room.state }));
+      broadcastPresence(id);
+      return;
+    }
+
+    // --- Login: parolni tekshiradi va avtomatik xonaga ulaydi ---
+    if (m.type === "login") {
+      const okUser = String(m.username || "").trim().toLowerCase() === AUTH.user.toLowerCase();
+      const okPass = String(m.password || "") === AUTH.pass;
+      if (!okUser || !okPass) {
+        safeSend(ws, JSON.stringify({ type: "error", error: "badauth" }));
+        return;
+      }
+      const id = COUPLE_ROOM;
+      let room = loadRoom(id);
+      if (!room) { room = { state: emptyState(), clients: new Set() }; rooms.set(id, room); persist(id); }
+      room.clients.add(ws);
+      ws.coupleId = id;
+      safeSend(ws, JSON.stringify({ type: "authok", coupleId: id, state: room.state }));
       broadcastPresence(id);
       return;
     }

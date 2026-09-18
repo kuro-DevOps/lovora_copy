@@ -98,6 +98,8 @@ h1, h2, h3, .days-count { font-family: "Comfortaa", sans-serif; }
 }
 .field input:focus { outline: none; border-color: var(--pink); }
 
+.login-error { color: #e94574; font-size: 14px; font-weight: 700; margin-bottom: 12px; text-align: center; }
+
 /* ---------- App shell ---------- */
 .app { max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 84px; }
 

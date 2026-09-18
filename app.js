@@ -1,10 +1,10 @@
-// ========================= Lovora — asosiy mantiq (real-time sync) =========================
+// ========================= Lovora — asosiy mantiq (login + real-time sync) =========================
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 const KEY = "lovora_v1";
-const COUPLE_KEY = "lovora_couple";
-const CFG = window.LOVORA_CONFIG || {};
+const AUTH_KEY = "lovora_auth";
 const IAM_KEY = "lovora_iam";
+const CFG = window.LOVORA_CONFIG || {};
 let iam = localStorage.getItem(IAM_KEY) || "";
 const currentPerson = () => iam || CFG.me || "Men";
 
@@ -15,49 +15,41 @@ const unseen = { questions: false, notes: false, memories: false };
 const defaultData = () => ({
   profile: { me: "", partner: "", date: "" },
   candleLit: false,
-  answers: [],   // {id, cat, q, a, ts}
-  notes: [],     // {id, text, ts}
-  memories: [],  // {id, title, text, photo, ts}
+  answers: [],
+  notes: [],
+  memories: [],
   ttt: { board: Array(9).fill(""), turn: "❌", p1: 0, p2: 0, over: false, winLine: null },
   dailySeed: null,
 });
 
-let data = load();
+let data = load() || defaultData();
+// Ismlar/sana config'dan (bir marta urug')
+if (!data.profile.me) data.profile = { me: CFG.me || "", partner: CFG.partner || "", date: CFG.startDate || "" };
 
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const d = { ...defaultData(), ...parsed };
+    const d = { ...defaultData(), ...JSON.parse(raw) };
     if (!d.ttt || !Array.isArray(d.ttt.board)) d.ttt = defaultData().ttt;
     return d;
   } catch (e) { return null; }
 }
-function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
-}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
 
 // ---- Sana yordamchilari ----
 const UZ_MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun",
   "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
-const fmtDate = (ts) => {
-  const d = new Date(ts);
-  return `${d.getDate()}-${UZ_MONTHS[d.getMonth()]}, ${d.getFullYear()}`;
-};
+const fmtDate = (ts) => { const d = new Date(ts); return `${d.getDate()}-${UZ_MONTHS[d.getMonth()]}, ${d.getFullYear()}`; };
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
-// ========================= REDUCER (server bilan bir xil) =========================
+// ========================= REDUCER =========================
 const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 function tttWinner(b) {
-  for (const line of WINS) {
-    const [a, c, d] = line;
-    if (b[a] && b[a] === b[c] && b[a] === b[d]) return { mark: b[a], line };
-  }
+  for (const line of WINS) { const [a, c, d] = line; if (b[a] && b[a] === b[c] && b[a] === b[d]) return { mark: b[a], line }; }
   return null;
 }
-
 function reduce(action, p) {
   switch (action) {
     case "PROFILE_SET": data.profile = { me: p.me, partner: p.partner, date: p.date }; break;
@@ -77,26 +69,24 @@ function reduce(action, p) {
       else { t.turn = t.turn === "❌" ? "⭕" : "❌"; }
       break;
     }
-    case "TTT_RESET": {
-      const t = data.ttt;
-      t.board = Array(9).fill(""); t.turn = "❌"; t.over = false; t.winLine = null; break;
-    }
+    case "TTT_RESET": { const t = data.ttt; t.board = Array(9).fill(""); t.turn = "❌"; t.over = false; t.winLine = null; break; }
   }
 }
+function dispatch(action, payload) { reduce(action, payload); save(); sync.send(action, payload); renderFor(action); }
+function applyRemote(action, payload) { reduce(action, payload); save(); renderFor(action); markUnseen(action); }
 
-// Mahalliy harakat: qo'llaymiz, saqlaymiz, serverga yuboramiz, qayta chizamiz
-function dispatch(action, payload) {
-  reduce(action, payload);
-  save();
-  sync.send(action, payload);
-  renderFor(action);
+function renderFor(action) {
+  if (action.startsWith("TTT")) return renderBoard();
+  if (action === "CANDLE") return renderCandle();
+  if (action === "ANSWER_ADD") return renderAnswers();
+  if (action.startsWith("NOTE")) return renderNotes();
+  if (action.startsWith("MEM")) return renderMemories();
+  if (action === "PROFILE_SET") { renderProfile(); renderDays(); return; }
+  renderAll();
 }
-// Serverdan kelgan delta: faqat qo'llaymiz + chizamiz (qayta yubormaymiz)
-function applyRemote(action, payload) {
-  reduce(action, payload);
-  save();
-  renderFor(action);
-  markUnseen(action);
+function renderAll() {
+  renderProfile(); renderDays(); renderCandle(); pickDaily();
+  renderAnswers(); renderNotes(); renderMemories(); renderBoard();
 }
 
 // Yorimizdan yangi narsa kelsa, menyuda belgi
@@ -108,118 +98,71 @@ function markUnseen(action) {
 }
 function renderBadges() {
   ["questions", "notes", "memories"].forEach((sec) => {
-    const btn = document.querySelector(`.nav-btn[data-go="${sec}"] .nav-badge`);
-    if (btn) btn.hidden = !unseen[sec];
+    const b = document.querySelector(`.nav-btn[data-go="${sec}"] .nav-badge`);
+    if (b) b.hidden = !unseen[sec];
   });
 }
 
-function renderFor(action) {
-  if (action.startsWith("TTT")) { renderBoard(); return; }
-  if (action === "CANDLE") { renderCandle(); return; }
-  if (action === "ANSWER_ADD") { renderAnswers(); return; }
-  if (action.startsWith("NOTE")) { renderNotes(); return; }
-  if (action.startsWith("MEM")) { renderMemories(); return; }
-  if (action === "PROFILE_SET") { renderProfile(); renderDays(); return; }
-  renderAll();
-}
-function renderAll() {
-  renderProfile(); renderDays(); renderCandle(); pickDaily();
-  renderAnswers(); renderNotes(); renderMemories(); renderBoard();
-}
-
-// ========================= SYNC (WebSocket) =========================
+// ========================= SYNC (WebSocket + login) =========================
 const sync = {
   ws: null,
-  coupleId: localStorage.getItem(COUPLE_KEY) || null,
+  coupleId: null,
   bothOnline: false,
+  creds: null, // {u,p}
 
-  url() {
-    const proto = location.protocol === "https:" ? "wss:" : "ws:";
-    return `${proto}//${location.host}`;
+  url() { return `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}`; },
+
+  // Login: WS ochamiz, parolni yuboramiz
+  connectAndLogin(u, p) {
+    this.creds = { u, p };
+    this._open(() => this._raw({ type: "login", username: u, password: p }));
   },
 
-  connect() {
-    if (!this.coupleId) return;
-    this._open(() => this._raw({ type: "join", coupleId: this.coupleId }));
-  },
-
-  create() {
-    // mavjud mahalliy ma'lumotni serverga urug' qilib yuboramiz
-    const snapshot = {
-      profile: data.profile, candleLit: data.candleLit,
-      answers: data.answers, notes: data.notes, memories: data.memories, ttt: data.ttt,
-    };
-    this._open(() => this._raw({ type: "create", snapshot }));
-  },
-
-  join(code) {
-    this.coupleId = code.toUpperCase();
-    this._open(() => this._raw({ type: "join", coupleId: this.coupleId }));
-  },
-
-  leave() {
-    localStorage.removeItem(COUPLE_KEY);
-    this.coupleId = null;
+  logout() {
+    localStorage.removeItem(AUTH_KEY);
+    this.creds = null; this.coupleId = null;
     if (this.ws) { this.ws.onclose = null; this.ws.close(); this.ws = null; }
-    this.bothOnline = false;
-    setConn(false, false);
-    renderPairUI();
   },
 
   _open(onReady) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) { onReady(); return; }
-    try { this.ws = new WebSocket(this.url()); } catch (e) { return; }
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) return onReady();
+    try { this.ws = new WebSocket(this.url()); } catch (e) { showLoginError("Serverga ulanib bo'lmadi"); return; }
     this.ws.onopen = () => onReady();
     this.ws.onmessage = (ev) => this._onMsg(ev);
-    this.ws.onclose = () => { setConn(false, false); this.bothOnline = false; renderCandle(); scheduleReconnect(); };
+    this.ws.onclose = () => { setConn(false, false); this.bothOnline = false; renderCandle(); renderConnUI(); if (this.creds) scheduleReconnect(); };
     this.ws.onerror = () => {};
   },
-
-  _raw(obj) { if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(obj)); },
-
-  send(action, payload) {
-    if (this.coupleId) this._raw({ type: "action", action, payload });
-  },
+  _raw(o) { if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(o)); },
+  send(action, payload) { if (this.coupleId) this._raw({ type: "action", action, payload }); },
 
   _onMsg(ev) {
     let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
-    if (m.type === "created") {
+    if (m.type === "authok") {
       this.coupleId = m.coupleId;
-      localStorage.setItem(COUPLE_KEY, m.coupleId);
-      setConn(true, false);
-      renderPairUI();
-    } else if (m.type === "state") {
-      // serverdagi to'liq holatni qabul qilamiz
-      localStorage.setItem(COUPLE_KEY, m.coupleId);
-      const seed = data.dailySeed;
-      data = { ...defaultData(), ...m.state, dailySeed: seed };
+      localStorage.setItem(AUTH_KEY, JSON.stringify(this.creds));
+      // serverdagi umumiy kontent (candle/answers/notes/memories/ttt), ismlar config'dan qoladi
+      const seed = data.dailySeed, prof = data.profile;
+      data = { ...defaultData(), ...m.state, profile: prof, dailySeed: seed };
       if (!data.ttt || !Array.isArray(data.ttt.board)) data.ttt = defaultData().ttt;
       save();
       setConn(true, false);
-      renderAll(); renderPairUI();
+      onAuthSuccess();
     } else if (m.type === "delta") {
       applyRemote(m.action, m.payload);
     } else if (m.type === "presence") {
       this.bothOnline = m.count >= 2;
       setConn(true, this.bothOnline);
-      renderCandle();
-    } else if (m.type === "error") {
-      if (m.error === "not_found") {
-        alert("Bunday juftlik kodi topilmadi. Kodni tekshiring.");
-        this.coupleId = null;
-        localStorage.removeItem(COUPLE_KEY);
-        renderPairUI();
-      }
+      renderCandle(); renderConnUI();
+    } else if (m.type === "error" && m.error === "badauth") {
+      showLoginError("Login yoki parol noto'g'ri");
     }
   },
 };
-
 let reconnectTimer = null;
 function scheduleReconnect() {
-  if (reconnectTimer || !sync.coupleId) return;
-  reconnectTimer = setTimeout(() => { reconnectTimer = null; sync.connect(); }, 3000);
+  if (reconnectTimer || !sync.creds) return;
+  reconnectTimer = setTimeout(() => { reconnectTimer = null; sync.connectAndLogin(sync.creds.u, sync.creds.p); }, 3000);
 }
-
 function setConn(connected, both) {
   const dot = $("#conn-dot");
   dot.classList.toggle("waiting", connected && !both);
@@ -227,25 +170,45 @@ function setConn(connected, both) {
   dot.title = !connected ? "Ulanmagan" : both ? "Ikkalangiz onlayn 💚" : "Ulangan — yor kutilmoqda";
 }
 
-// ========================= Shaxsiy sozlamalar (config) =========================
+// ========================= LOGIN sahifasi =========================
+function showLogin() {
+  $("#login").classList.remove("hidden");
+  $("#app").classList.add("hidden");
+}
+function showLoginError(msg) {
+  const e = $("#login-error");
+  e.textContent = msg; e.classList.remove("hidden");
+  const btn = $("#login-btn"); btn.disabled = false; btn.textContent = "Kirish 💕";
+}
+$("#login-btn").addEventListener("click", () => {
+  const u = $("#login-user").value.trim();
+  const p = $("#login-pass").value;
+  if (!u || !p) { showLoginError("Login va parolni kiriting"); return; }
+  $("#login-error").classList.add("hidden");
+  const btn = $("#login-btn"); btn.disabled = true; btn.textContent = "Ulanmoqda...";
+  sync.connectAndLogin(u, p);
+});
+$("#login-pass").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#login-btn").click(); });
+
+function onAuthSuccess() {
+  $("#login").classList.add("hidden");
+  startApp();
+}
+
+// ========================= Shaxsiy (config) =========================
 function applyTheme() {
   if (!CFG.themeColor) return;
-  const c = CFG.themeColor;
-  const root = document.documentElement.style;
+  const c = CFG.themeColor, root = document.documentElement.style;
   root.setProperty("--pink", c);
   root.setProperty("--pink-dark", `color-mix(in srgb, ${c} 78%, black)`);
   root.setProperty("--pink-soft", `color-mix(in srgb, ${c} 22%, white)`);
-  document.querySelector('meta[name="theme-color"]').setAttribute("content", c);
+  const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute("content", c);
 }
-
-// Uchar yuraklar
 function spawnHearts() {
-  const bg = $("#hearts-bg");
-  const emojis = ["❤", "💕", "💗", "💞", "🩷"];
+  const bg = $("#hearts-bg"); const emojis = ["❤", "💕", "💗", "💞", "🩷"];
   for (let i = 0; i < 14; i++) {
     const h = document.createElement("span");
-    h.className = "fh";
-    h.textContent = emojis[i % emojis.length];
+    h.className = "fh"; h.textContent = emojis[i % emojis.length];
     h.style.left = Math.random() * 100 + "%";
     h.style.fontSize = 14 + Math.random() * 18 + "px";
     h.style.animationDuration = 9 + Math.random() * 10 + "s";
@@ -258,175 +221,26 @@ function spawnHearts() {
 function boot() {
   applyTheme();
   spawnHearts();
-  if (!data || !data.profile.me) {
-    // config to'ldirilgan bo'lsa — onboardingni o'tkazib yuboramiz
-    if (CFG.me && CFG.partner) {
-      data = defaultData();
-      data.profile = { me: CFG.me, partner: CFG.partner, date: CFG.startDate || todayKey() };
-      save();
-      startApp();
-    } else {
-      $("#onboarding").classList.remove("hidden");
-      $("#onb-date").value = todayKey();
-    }
-  } else {
-    startApp();
+  showLogin();
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(AUTH_KEY)); } catch (e) {}
+  if (saved && saved.u && saved.p) {
+    // avval kirgan — avtomatik login
+    $("#login-user").value = saved.u;
+    const btn = $("#login-btn"); btn.disabled = true; btn.textContent = "Ulanmoqda...";
+    sync.connectAndLogin(saved.u, saved.p);
   }
 }
-
-$("#onb-start").addEventListener("click", () => {
-  const me = $("#onb-me").value.trim();
-  const partner = $("#onb-partner").value.trim();
-  const date = $("#onb-date").value;
-  if (!me || !partner) { shake($("#onb-me").value ? "#onb-partner" : "#onb-me"); return; }
-  data = defaultData();
-  data.profile = { me, partner, date: date || todayKey() };
-  save();
-  $("#onboarding").classList.add("hidden");
-  startApp();
-});
-
-function shake(sel) { const el = $(sel); el.style.borderColor = "#e94574"; el.focus(); }
 
 function startApp() {
   $("#app").classList.remove("hidden");
   renderAll();
   renderScore();
-  renderPairUI();
-  renderSurprise();
-  renderSong();
   renderBadges();
+  renderConnUI();
   go("home");
-  sync.connect(); // agar avval ulangan bo'lsa
   maybeShowLetter();
   maybeAskIdentity();
-}
-
-// ========================= Bizning qo'shig'imiz =========================
-let songPlaying = false;
-function renderSong() {
-  const card = $("#song-card");
-  if (!CFG.songYoutubeId) { card.classList.add("hidden"); return; }
-  card.classList.remove("hidden");
-}
-$("#song-toggle").addEventListener("click", () => {
-  const player = $("#song-player");
-  const btn = $("#song-toggle");
-  if (songPlaying) {
-    player.innerHTML = "";
-    player.classList.add("hidden");
-    btn.textContent = "▶";
-    $("#song-hint").textContent = "Tinglash uchun bosing";
-    songPlaying = false;
-  } else {
-    const id = encodeURIComponent(CFG.songYoutubeId);
-    player.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-    player.classList.remove("hidden");
-    btn.textContent = "⏸";
-    $("#song-hint").textContent = "Ijro etilyapti...";
-    songPlaying = true;
-  }
-});
-
-// ========================= Ochilish xati =========================
-const LETTER_KEY = "lovora_letter_seen";
-function fillLetter() {
-  $("#letter-text").textContent = (CFG.openingLetter || "").trim();
-  const sign = CFG.letterSign || (CFG.me ? `Sening ${CFG.me} ❤` : "");
-  $("#letter-sign").textContent = sign ? `— ${sign}` : "";
-}
-function maybeShowLetter() {
-  if (!CFG.openingLetter) return;
-  if (localStorage.getItem(LETTER_KEY)) return;
-  openLetter();
-}
-function openLetter() {
-  fillLetter();
-  const ov = $("#letter-overlay");
-  const env = $("#envelope");
-  const paper = $("#letter-paper");
-  env.classList.remove("open", "hidden");
-  paper.classList.add("hidden");
-  ov.classList.remove("hidden");
-}
-$("#envelope").addEventListener("click", () => {
-  $("#envelope").classList.add("open");
-  setTimeout(() => {
-    $("#envelope").classList.add("hidden");
-    $("#letter-paper").classList.remove("hidden");
-    heartRain(18);
-  }, 550);
-});
-$("#letter-close").addEventListener("click", () => {
-  $("#letter-overlay").classList.add("hidden");
-  localStorage.setItem(LETTER_KEY, "1");
-  maybeAskIdentity();
-});
-$("#btn-letter").addEventListener("click", openLetter);
-
-// ========================= Kim bu qurilmada? =========================
-function maybeAskIdentity() {
-  if (iam) return;
-  if (!CFG.me || !CFG.partner) return;
-  if (!$("#letter-overlay").classList.contains("hidden")) return; // xat ochiq bo'lsa keyinroq
-  $("#id-btn-me").textContent = CFG.me;
-  $("#id-btn-partner").textContent = CFG.partner;
-  $("#identity-modal").classList.remove("hidden");
-}
-function setIdentity(name) {
-  iam = name;
-  localStorage.setItem(IAM_KEY, name);
-  $("#identity-modal").classList.add("hidden");
-}
-$("#id-btn-me").addEventListener("click", () => setIdentity(CFG.me));
-$("#id-btn-partner").addEventListener("click", () => setIdentity(CFG.partner));
-
-// ========================= Sirli sovg'a =========================
-const SURPRISE_KEY = "lovora_surprise_opened";
-function daysUntil(dateStr) {
-  const target = new Date(dateStr + "T00:00:00");
-  const now = new Date(); now.setHours(0, 0, 0, 0);
-  return Math.ceil((target - now) / 86400000);
-}
-function renderSurprise() {
-  const s = CFG.surprise;
-  const card = $("#surprise-card");
-  if (!s || !s.date) { card.classList.add("hidden"); return; }
-  card.classList.remove("hidden");
-  $("#surprise-title").textContent = s.title || "Sirli sovg'a 🎁";
-  const left = daysUntil(s.date);
-  const btn = $("#surprise-btn");
-  if (left > 0) {
-    $("#surprise-sub").textContent = `${left} kundan keyin ochiladi...`;
-    btn.classList.add("hidden");
-  } else {
-    $("#surprise-sub").textContent = "Bugun ochsang bo'ladi 💝";
-    btn.classList.remove("hidden");
-  }
-}
-$("#surprise-btn").addEventListener("click", () => {
-  const s = CFG.surprise || {};
-  $("#sr-title").textContent = s.title || "Sen uchun 🎁";
-  $("#sr-message").textContent = (s.message || "").trim();
-  $("#surprise-modal").classList.remove("hidden");
-  heartRain(40);
-  localStorage.setItem(SURPRISE_KEY, "1");
-});
-$("#sr-close").addEventListener("click", () => $("#surprise-modal").classList.add("hidden"));
-
-// Yurak/konfeti yomg'iri
-function heartRain(n) {
-  const items = ["💖", "💕", "🎉", "✨", "💗", "🌸"];
-  for (let i = 0; i < n; i++) {
-    const el = document.createElement("span");
-    el.className = "confetti";
-    el.textContent = items[Math.floor(Math.random() * items.length)];
-    el.style.left = Math.random() * 100 + "vw";
-    el.style.animationDuration = 2 + Math.random() * 2.5 + "s";
-    el.style.animationDelay = Math.random() * 0.5 + "s";
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 5000);
-  }
 }
 
 // ========================= Profil / kunlar =========================
@@ -435,8 +249,7 @@ function renderProfile() {
   $("#hdr-partner").textContent = data.profile.partner || "Yor";
 }
 function renderDays() {
-  const start = new Date(data.profile.date);
-  const now = new Date();
+  const start = new Date(data.profile.date), now = new Date();
   const diff = Math.max(0, Math.floor((now - start) / 86400000));
   $("#days-count").textContent = diff.toLocaleString("uz-UZ");
   $("#days-since").textContent = data.profile.date ? `${fmtDate(start)} dan beri` : "";
@@ -466,32 +279,23 @@ $$("[data-go]").forEach((el) => el.addEventListener("click", () => go(el.dataset
 // ========================= Savollar =========================
 const Q = window.LOVORA_QUESTIONS;
 let currentQ = null;
-
 function pickDaily() {
   const day = todayKey();
   if (!data.dailySeed || data.dailySeed.day !== day) {
-    const idx = Math.abs(hash(day)) % Q.length;
-    data.dailySeed = { day, index: idx };
-    save();
+    data.dailySeed = { day, index: Math.abs(hash(day)) % Q.length }; save();
   }
   const dq = Q[data.dailySeed.index];
   $("#home-daily-q").textContent = dq.q;
   showQuestion(dq);
 }
 function hash(str) { let h = 0; for (let i = 0; i < str.length; i++) { h = (h << 5) - h + str.charCodeAt(i); h |= 0; } return h; }
-function showQuestion(q) {
-  currentQ = q;
-  $("#q-cat").textContent = q.cat;
-  $("#q-text").textContent = q.q;
-  $("#q-answer").value = "";
-}
+function showQuestion(q) { currentQ = q; $("#q-cat").textContent = q.cat; $("#q-text").textContent = q.q; $("#q-answer").value = ""; }
 $("#q-next").addEventListener("click", () => showQuestion(Q[Math.floor(Math.random() * Q.length)]));
 $("#q-save").addEventListener("click", () => {
   const a = $("#q-answer").value.trim();
   if (!a || !currentQ) return;
   dispatch("ANSWER_ADD", { id: uid(), cat: currentQ.cat, q: currentQ.q, a, by: currentPerson(), ts: Date.now() });
-  $("#q-answer").value = "";
-  flash($("#q-save"), "Saqlandi ✓");
+  $("#q-answer").value = ""; flash($("#q-save"), "Saqlandi ✓");
 });
 function renderAnswers() {
   const box = $("#q-history");
@@ -528,19 +332,16 @@ function renderNotes() {
 // ========================= Xotiralar =========================
 let pendingPhoto = null;
 $("#mem-photo").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => { pendingPhoto = reader.result; const p = $("#mem-preview"); p.src = pendingPhoto; p.classList.remove("hidden"); };
-  reader.readAsDataURL(file);
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = () => { pendingPhoto = r.result; const p = $("#mem-preview"); p.src = pendingPhoto; p.classList.remove("hidden"); };
+  r.readAsDataURL(file);
 });
 $("#mem-save").addEventListener("click", () => {
-  const title = $("#mem-title").value.trim();
-  const text = $("#mem-text").value.trim();
+  const title = $("#mem-title").value.trim(), text = $("#mem-text").value.trim();
   if (!title && !text && !pendingPhoto) return;
   dispatch("MEM_ADD", { id: uid(), title, text, photo: pendingPhoto, by: currentPerson(), ts: Date.now() });
-  $("#mem-title").value = ""; $("#mem-text").value = "";
-  $("#mem-photo").value = ""; pendingPhoto = null;
+  $("#mem-title").value = ""; $("#mem-text").value = ""; $("#mem-photo").value = ""; pendingPhoto = null;
   $("#mem-preview").classList.add("hidden");
 });
 function renderMemories() {
@@ -558,42 +359,31 @@ function renderMemories() {
   $$("[data-del-mem]").forEach((b) => b.addEventListener("click", () => dispatch("MEM_DEL", { id: b.dataset.delMem })));
 }
 
-// ========================= O'yin: Tic-Tac-Toe (jonli) =========================
+// ========================= O'yin (jonli) =========================
 function renderBoard() {
-  const t = data.ttt;
-  const el = $("#ttt-board");
+  const t = data.ttt, el = $("#ttt-board");
   el.innerHTML = "";
   for (let i = 0; i < 9; i++) {
     const c = document.createElement("button");
     c.className = "ttt-cell" + (t.winLine && t.winLine.includes(i) ? " win" : "");
     c.textContent = t.board[i];
-    c.addEventListener("click", () => {
-      if (t.over || t.board[i]) return;
-      dispatch("TTT_MOVE", { i });
-    });
+    c.addEventListener("click", () => { if (t.over || t.board[i]) return; dispatch("TTT_MOVE", { i }); });
     el.appendChild(c);
   }
   $("#ttt-turn").textContent = t.over ? "" : `Navbat: ${t.turn}`;
-  if (t.over) {
-    const w = tttWinner(t.board);
-    $("#ttt-status").textContent = w ? `${w.mark} yutdi! 🎉` : "Durrang! 🤝";
-  } else {
-    $("#ttt-status").textContent = "";
-  }
+  if (t.over) { const w = tttWinner(t.board); $("#ttt-status").textContent = w ? `${w.mark} yutdi! 🎉` : "Durrang! 🤝"; }
+  else $("#ttt-status").textContent = "";
   renderScore();
 }
-function renderScore() {
-  $("#ttt-p1").textContent = `❌ ${data.ttt.p1}`;
-  $("#ttt-p2").textContent = `⭕ ${data.ttt.p2}`;
-}
+function renderScore() { $("#ttt-p1").textContent = `❌ ${data.ttt.p1}`; $("#ttt-p2").textContent = `⭕ ${data.ttt.p2}`; }
 $("#ttt-reset").addEventListener("click", () => dispatch("TTT_RESET", {}));
 
-// ========================= Sozlamalar + Pairing =========================
+// ========================= Sozlamalar =========================
 $("#btn-settings").addEventListener("click", () => {
   $("#set-me").value = data.profile.me;
   $("#set-partner").value = data.profile.partner;
   $("#set-date").value = data.profile.date;
-  renderPairUI();
+  renderConnUI();
   $("#settings-modal").classList.remove("hidden");
 });
 $("#set-close").addEventListener("click", () => $("#settings-modal").classList.add("hidden"));
@@ -604,43 +394,86 @@ $("#set-save").addEventListener("click", () => {
   dispatch("PROFILE_SET", { me, partner, date });
   $("#settings-modal").classList.add("hidden");
 });
-$("#set-reset").addEventListener("click", () => {
-  if (confirm("Rostdan ham hamma ma'lumotni o'chirasizmi? Bu qaytarib bo'lmaydi.")) {
-    localStorage.removeItem(KEY);
-    localStorage.removeItem(COUPLE_KEY);
-    location.reload();
-  }
+$("#set-logout").addEventListener("click", () => {
+  if (confirm("Chiqasizmi? Qayta login qilishingiz kerak bo'ladi.")) { sync.logout(); location.reload(); }
 });
+function renderConnUI() {
+  const st = $("#pair-status");
+  if (!sync.coupleId) { st.textContent = "Ulanmagan"; st.classList.remove("ok"); }
+  else if (sync.bothOnline) { st.textContent = "Ikkalangiz onlayn — jonli sinxron 💚"; st.classList.add("ok"); }
+  else { st.textContent = "Ulangan — yoringiz kutilmoqda"; st.classList.remove("ok"); }
+  $("#pair-iam").textContent = iam ? `Bu qurilma: ${iam}` : "";
+}
 
-$("#pair-create").addEventListener("click", () => sync.create());
-$("#pair-join-btn").addEventListener("click", () => {
-  const code = $("#pair-input").value.trim();
-  if (code.length < 4) { $("#pair-input").style.borderColor = "#e94574"; return; }
-  sync.join(code);
+// ========================= Ochilish xati =========================
+const LETTER_KEY = "lovora_letter_seen";
+function fillLetter() {
+  $("#letter-text").textContent = (CFG.openingLetter || "").trim();
+  const sign = CFG.letterSign || (CFG.me ? `Sening ${CFG.me} ❤` : "");
+  $("#letter-sign").textContent = sign ? `— ${sign}` : "";
+}
+function maybeShowLetter() { if (CFG.openingLetter && !localStorage.getItem(LETTER_KEY)) openLetter(); }
+function openLetter() {
+  fillLetter();
+  $("#envelope").classList.remove("open", "hidden");
+  $("#letter-paper").classList.add("hidden");
+  $("#letter-overlay").classList.remove("hidden");
+}
+$("#envelope").addEventListener("click", () => {
+  $("#envelope").classList.add("open");
+  setTimeout(() => { $("#envelope").classList.add("hidden"); $("#letter-paper").classList.remove("hidden"); heartRain(18); }, 550);
 });
-$("#pair-leave").addEventListener("click", () => {
-  if (confirm("Ulanishni uzasizmi? Ma'lumotlar qurilmangizda qoladi.")) sync.leave();
+$("#letter-close").addEventListener("click", () => {
+  $("#letter-overlay").classList.add("hidden");
+  localStorage.setItem(LETTER_KEY, "1");
+  maybeAskIdentity();
 });
+$("#btn-letter").addEventListener("click", openLetter);
 
-function renderPairUI() {
-  const paired = !!sync.coupleId;
-  $("#pair-code-view").classList.toggle("hidden", !paired);
-  $("#pair-create").classList.toggle("hidden", paired);
-  $(".pair-join").classList.toggle("hidden", paired);
-  $("#pair-leave").classList.toggle("hidden", !paired);
-  if (paired) {
-    $("#pair-code").textContent = sync.coupleId;
-    const st = $("#pair-status");
-    st.textContent = sync.bothOnline ? "Ikkalangiz onlayn — jonli sinxron 💚" : "Ulangan — yoringiz kutilmoqda";
-    st.classList.toggle("ok", sync.bothOnline);
-  } else {
-    $("#pair-status").textContent = "Ulanmagan — ikki qurilmani birlashtiring";
-    $("#pair-status").classList.remove("ok");
+// ========================= Kim bu qurilmada? =========================
+function maybeAskIdentity() {
+  if (iam || !CFG.me || !CFG.partner) return;
+  if (!$("#letter-overlay").classList.contains("hidden")) return;
+  $("#id-btn-me").textContent = CFG.me;
+  $("#id-btn-partner").textContent = CFG.partner;
+  $("#identity-modal").classList.remove("hidden");
+}
+function setIdentity(name) { iam = name; localStorage.setItem(IAM_KEY, name); $("#identity-modal").classList.add("hidden"); renderConnUI(); }
+$("#id-btn-me").addEventListener("click", () => setIdentity(CFG.me));
+$("#id-btn-partner").addEventListener("click", () => setIdentity(CFG.partner));
+
+// ========================= Yurak yomg'iri =========================
+function heartRain(n) {
+  const items = ["💖", "💕", "🎉", "✨", "💗", "🌸"];
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement("span");
+    el.className = "confetti"; el.textContent = items[Math.floor(Math.random() * items.length)];
+    el.style.left = Math.random() * 100 + "vw";
+    el.style.animationDuration = 2 + Math.random() * 2.5 + "s";
+    el.style.animationDelay = Math.random() * 0.5 + "s";
+    document.body.appendChild(el); setTimeout(() => el.remove(), 5000);
   }
 }
+
+// ========================= Song =========================
+let songPlaying = false;
+function renderSong() { $("#song-card").classList.toggle("hidden", !CFG.songYoutubeId); }
+$("#song-toggle").addEventListener("click", () => {
+  const player = $("#song-player"), btn = $("#song-toggle");
+  if (songPlaying) {
+    player.innerHTML = ""; player.classList.add("hidden"); btn.textContent = "▶";
+    $("#song-hint").textContent = "Tinglash uchun bosing"; songPlaying = false;
+  } else {
+    const id = encodeURIComponent(CFG.songYoutubeId);
+    player.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+    player.classList.remove("hidden"); btn.textContent = "⏸";
+    $("#song-hint").textContent = "Ijro etilyapti..."; songPlaying = true;
+  }
+});
 
 // ========================= Yordamchilar =========================
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function flash(btn, text) { const old = btn.textContent; btn.textContent = text; setTimeout(() => (btn.textContent = old), 1200); }
 
+renderSong();
 boot();

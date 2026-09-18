@@ -32,20 +32,9 @@ Sen mening butun dunyomsan. Seni behad yaxshi ko'raman.`,
   // Xat oxiridagi imzo
   letterSign: "Abadiy sening, Saydullo 💖",
 
-  // ---- 🎁 Sirli sovg'a — Osiyoning tug'ilgan kunida ochiladi ----
-  surprise: {
-    date: "2026-10-09",     // Tug'ilgan kuni (YYYY-MM-DD)
-    title: "Tug'ilgan kuning muborak, Osiyo! 🎂",
-    message: `Bugun sen dunyoga kelgan kun —
-men uchun eng qimmatli sana 💝
-
-Yoshing muborak bo'lsin, jonim.
-Ko'zlaringdagi nur hech qachon so'nmasin,
-mehribon qalbing doimo shod bo'lsin.
-
-Men doim yoningdaman. Seni behad sevaman! 🎉`,
-  },
-
   // ---- Bizning qo'shig'imiz ----
   songYoutubeId: "EFUAY_KiRt0",
 };
+
+// Eslatma: Login va parol SERVERDA saqlanadi (kodda ochiq emas).
+// Railway'da Variables orqali o'zgartiring: AUTH_USER, AUTH_PASS
