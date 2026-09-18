@@ -15,8 +15,8 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 // ---------- Login (parol serverda, kodda ochiq emas) ----------
 // Railway'da Variables orqali o'zgartiring: AUTH_USER, AUTH_PASS
 const AUTH = {
-  user: process.env.AUTH_USER || "osiyo",
-  pass: process.env.AUTH_PASS || "lovora2026",
+  user: process.env.AUTH_USER || "Osiyo",
+  pass: process.env.AUTH_PASS || "02082026",
 };
 // Ikkalangiz uchun yagona (avtomatik) xona
 const COUPLE_ROOM = process.env.COUPLE_ROOM || "LOVORA1";

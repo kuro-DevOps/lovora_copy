@@ -16,21 +16,21 @@ window.LOVORA_CONFIG = {
   // (Imzo pastda avtomatik qo'shiladi)
   openingLetter: `Assalomu alaykum, Hayotim 🌸
 
-Bu ilovani faqat sen uchun yaratdim.
+Bu ilovani faqat siz uchun yaratdim.
 
-Ko'zlaringga har qaraganimda, butun dunyoni unutaman —
+Ko'zlaringizga har qaraganimda, butun dunyoni unutaman —
 ular shu qadar ajoyibki, ichida o'zimni yo'qotib qo'yaman.
-Mehribonliging esa qalbimni iliqlikka to'ldiradi;
-sen borliging uchun har kunim yorug'.
+Mehribonligingiz esa qalbimni iliqlikka to'ldiradi;
+siz borligingiz uchun har kunim yorug'.
 
 Bu yerda ikkovimizga tegishli har bir lahza saqlanadi —
 xatlarimiz, xotiralarimiz, savollarimiz va o'yinlarimiz.
-Buni bizning kichkina olamimiz deb bil.
+Buni bizning kichkina olamimiz deb biling.
 
-Sen mening butun dunyomsan. Seni behad yaxshi ko'raman.`,
+Siz mening butun dunyomsiz. Sizni behad yaxshi ko'raman.`,
 
   // Xat oxiridagi imzo
-  letterSign: "Abadiy sening, Saydullo 💖",
+  letterSign: "Abadiy sizniki, Saydullo 💖",
 
   // ---- Bizning qo'shig'imiz ----
   songYoutubeId: "EFUAY_KiRt0",
