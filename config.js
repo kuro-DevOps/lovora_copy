@@ -13,8 +13,8 @@ window.LOVORA_CONFIG = {
   themeColor: "#ff8fb3",
 
   // ---- Ilk ochilishda chiqadigan xat ----
-  // (Imzo — "Sening <ismingiz>" — avtomatik qo'shiladi)
-  openingLetter: `Assalomu alaykum, Osiyo 🌸
+  // (Imzo pastda avtomatik qo'shiladi)
+  openingLetter: `Assalomu alaykum, Hayotim 🌸
 
 Bu ilovani faqat sen uchun yaratdim.
 
@@ -27,7 +27,10 @@ Bu yerda ikkovimizga tegishli har bir lahza saqlanadi —
 xatlarimiz, xotiralarimiz, savollarimiz va o'yinlarimiz.
 Buni bizning kichkina olamimiz deb bil.
 
-Seni juda yaxshi ko'raman.`,
+Sen mening butun dunyomsan. Seni behad yaxshi ko'raman.`,
+
+  // Xat oxiridagi imzo
+  letterSign: "Abadiy sening, Saydullo 💖",
 
   // ---- 🎁 Sirli sovg'a — Osiyoning tug'ilgan kunida ochiladi ----
   surprise: {

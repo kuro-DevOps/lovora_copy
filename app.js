@@ -4,6 +4,12 @@ const $$ = (s) => document.querySelectorAll(s);
 const KEY = "lovora_v1";
 const COUPLE_KEY = "lovora_couple";
 const CFG = window.LOVORA_CONFIG || {};
+const IAM_KEY = "lovora_iam";
+let iam = localStorage.getItem(IAM_KEY) || "";
+const currentPerson = () => iam || CFG.me || "Men";
+
+// "Yangi" belgilar (yorimizdan kelgan, hali ko'rilmagan)
+const unseen = { questions: false, notes: false, memories: false };
 
 // ---- Ma'lumotlar modeli (server bilan bir xil) ----
 const defaultData = () => ({
@@ -90,6 +96,21 @@ function applyRemote(action, payload) {
   reduce(action, payload);
   save();
   renderFor(action);
+  markUnseen(action);
+}
+
+// Yorimizdan yangi narsa kelsa, menyuda belgi
+const SECTION_OF = { ANSWER_ADD: "questions", NOTE_ADD: "notes", MEM_ADD: "memories" };
+function markUnseen(action) {
+  const sec = SECTION_OF[action];
+  if (!sec) return;
+  if (currentView !== sec) { unseen[sec] = true; renderBadges(); }
+}
+function renderBadges() {
+  ["questions", "notes", "memories"].forEach((sec) => {
+    const btn = document.querySelector(`.nav-btn[data-go="${sec}"] .nav-badge`);
+    if (btn) btn.hidden = !unseen[sec];
+  });
 }
 
 function renderFor(action) {
@@ -274,9 +295,11 @@ function startApp() {
   renderPairUI();
   renderSurprise();
   renderSong();
+  renderBadges();
   go("home");
   sync.connect(); // agar avval ulangan bo'lsa
   maybeShowLetter();
+  maybeAskIdentity();
 }
 
 // ========================= Bizning qo'shig'imiz =========================
@@ -309,7 +332,8 @@ $("#song-toggle").addEventListener("click", () => {
 const LETTER_KEY = "lovora_letter_seen";
 function fillLetter() {
   $("#letter-text").textContent = (CFG.openingLetter || "").trim();
-  $("#letter-sign").textContent = CFG.me ? `— Sening ${CFG.me} ❤` : "";
+  const sign = CFG.letterSign || (CFG.me ? `Sening ${CFG.me} ❤` : "");
+  $("#letter-sign").textContent = sign ? `— ${sign}` : "";
 }
 function maybeShowLetter() {
   if (!CFG.openingLetter) return;
@@ -336,8 +360,26 @@ $("#envelope").addEventListener("click", () => {
 $("#letter-close").addEventListener("click", () => {
   $("#letter-overlay").classList.add("hidden");
   localStorage.setItem(LETTER_KEY, "1");
+  maybeAskIdentity();
 });
 $("#btn-letter").addEventListener("click", openLetter);
+
+// ========================= Kim bu qurilmada? =========================
+function maybeAskIdentity() {
+  if (iam) return;
+  if (!CFG.me || !CFG.partner) return;
+  if (!$("#letter-overlay").classList.contains("hidden")) return; // xat ochiq bo'lsa keyinroq
+  $("#id-btn-me").textContent = CFG.me;
+  $("#id-btn-partner").textContent = CFG.partner;
+  $("#identity-modal").classList.remove("hidden");
+}
+function setIdentity(name) {
+  iam = name;
+  localStorage.setItem(IAM_KEY, name);
+  $("#identity-modal").classList.add("hidden");
+}
+$("#id-btn-me").addEventListener("click", () => setIdentity(CFG.me));
+$("#id-btn-partner").addEventListener("click", () => setIdentity(CFG.partner));
 
 // ========================= Sirli sovg'a =========================
 const SURPRISE_KEY = "lovora_surprise_opened";
@@ -410,10 +452,13 @@ function renderCandle() {
 $("#candle-toggle").addEventListener("click", () => dispatch("CANDLE", { lit: !data.candleLit }));
 
 // ========================= Navigatsiya =========================
+let currentView = "home";
 function go(view) {
+  currentView = view;
   $$(".view").forEach((v) => v.classList.add("hidden"));
   $(`#view-${view}`).classList.remove("hidden");
   $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.go === view));
+  if (unseen[view] !== undefined) { unseen[view] = false; renderBadges(); }
   window.scrollTo(0, 0);
 }
 $$("[data-go]").forEach((el) => el.addEventListener("click", () => go(el.dataset.go)));
@@ -444,7 +489,7 @@ $("#q-next").addEventListener("click", () => showQuestion(Q[Math.floor(Math.rand
 $("#q-save").addEventListener("click", () => {
   const a = $("#q-answer").value.trim();
   if (!a || !currentQ) return;
-  dispatch("ANSWER_ADD", { id: uid(), cat: currentQ.cat, q: currentQ.q, a, ts: Date.now() });
+  dispatch("ANSWER_ADD", { id: uid(), cat: currentQ.cat, q: currentQ.q, a, by: currentPerson(), ts: Date.now() });
   $("#q-answer").value = "";
   flash($("#q-save"), "Saqlandi ✓");
 });
@@ -455,7 +500,7 @@ function renderAnswers() {
     <div class="q-item">
       <div class="qq">${esc(a.q)}</div>
       <div class="qa">${esc(a.a)}</div>
-      <div class="qd">${fmtDate(a.ts)}</div>
+      <div class="qd">${a.by ? "✍️ " + esc(a.by) + " · " : ""}${fmtDate(a.ts)}</div>
     </div>`).join("");
 }
 
@@ -463,7 +508,7 @@ function renderAnswers() {
 $("#note-send").addEventListener("click", () => {
   const t = $("#note-input").value.trim();
   if (!t) return;
-  dispatch("NOTE_ADD", { id: uid(), text: t, ts: Date.now() });
+  dispatch("NOTE_ADD", { id: uid(), text: t, by: currentPerson(), ts: Date.now() });
   $("#note-input").value = "";
 });
 function renderNotes() {
@@ -473,7 +518,7 @@ function renderNotes() {
     <div class="note">
       <div class="note-text">${esc(n.text)}</div>
       <div class="note-meta">
-        <span class="note-date">${fmtDate(n.ts)}</span>
+        <span class="note-date">${n.by ? "💗 " + esc(n.by) + " · " : ""}${fmtDate(n.ts)}</span>
         <button class="note-del" data-del-note="${n.id}">🗑️</button>
       </div>
     </div>`).join("");
@@ -493,7 +538,7 @@ $("#mem-save").addEventListener("click", () => {
   const title = $("#mem-title").value.trim();
   const text = $("#mem-text").value.trim();
   if (!title && !text && !pendingPhoto) return;
-  dispatch("MEM_ADD", { id: uid(), title, text, photo: pendingPhoto, ts: Date.now() });
+  dispatch("MEM_ADD", { id: uid(), title, text, photo: pendingPhoto, by: currentPerson(), ts: Date.now() });
   $("#mem-title").value = ""; $("#mem-text").value = "";
   $("#mem-photo").value = ""; pendingPhoto = null;
   $("#mem-preview").classList.add("hidden");
@@ -507,7 +552,7 @@ function renderMemories() {
       <div class="mem-body">
         ${m.title ? `<h4>${esc(m.title)}</h4>` : ""}
         ${m.text ? `<p>${esc(m.text)}</p>` : ""}
-        <div class="mem-date">${fmtDate(m.ts)} · <span data-del-mem="${m.id}" style="cursor:pointer">o'chirish</span></div>
+        <div class="mem-date">${m.by ? esc(m.by) + " · " : ""}${fmtDate(m.ts)} · <span data-del-mem="${m.id}" style="cursor:pointer">o'chirish</span></div>
       </div>
     </div>`).join("");
   $$("[data-del-mem]").forEach((b) => b.addEventListener("click", () => dispatch("MEM_DEL", { id: b.dataset.delMem })));

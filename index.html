@@ -177,9 +177,9 @@
     <!-- Bottom nav -->
     <nav class="bottom-nav">
       <button class="nav-btn active" data-go="home"><span>🏠</span>Bosh</button>
-      <button class="nav-btn" data-go="questions"><span>💬</span>Savol</button>
-      <button class="nav-btn" data-go="notes"><span>💌</span>Xat</button>
-      <button class="nav-btn" data-go="memories"><span>📸</span>Xotira</button>
+      <button class="nav-btn" data-go="questions"><span>💬<i class="nav-badge" hidden></i></span>Savol</button>
+      <button class="nav-btn" data-go="notes"><span>💌<i class="nav-badge" hidden></i></span>Xat</button>
+      <button class="nav-btn" data-go="memories"><span>📸<i class="nav-badge" hidden></i></span>Xotira</button>
       <button class="nav-btn" data-go="games"><span>🎮</span>O'yin</button>
     </nav>
   </main>
@@ -212,6 +212,16 @@
 
       <button id="set-reset" class="btn-danger small">Hammasini o'chirish</button>
       <button id="set-close" class="btn-ghost small">Yopish</button>
+    </div>
+  </div>
+
+  <!-- Kim bu qurilmada? -->
+  <div id="identity-modal" class="modal hidden">
+    <div class="modal-card" style="text-align:center">
+      <h3>Bu telefon kimniki? 💕</h3>
+      <p style="color:var(--text-soft);font-size:14px;margin-bottom:18px">Shunda yozgan javob va xatlaringiz kimniki ekani ko'rinadi</p>
+      <button id="id-btn-me" class="btn-primary small" style="width:100%;margin-bottom:10px">Men</button>
+      <button id="id-btn-partner" class="btn-ghost small" style="width:100%">Yor</button>
     </div>
   </div>
 
