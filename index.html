@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#ff5e8a" />
+  <title>Lovora — Ikkovimiz uchun</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Uchar yuraklar foni -->
+  <div id="hearts-bg" class="hearts-bg" aria-hidden="true"></div>
+
+  <!-- ================= OCHILISH XATI ================= -->
+  <div id="letter-overlay" class="letter-overlay hidden">
+    <div class="envelope" id="envelope">
+      <div class="env-flap"></div>
+      <div class="env-body"></div>
+      <div class="env-heart">💌</div>
+      <p class="env-tap">Ochish uchun bosing</p>
+    </div>
+    <div class="letter-paper hidden" id="letter-paper">
+      <p class="letter-text" id="letter-text"></p>
+      <p class="letter-sign" id="letter-sign"></p>
+      <button id="letter-close" class="btn-primary small">Rahmat 💕</button>
+    </div>
+  </div>
+  <!-- ================= ONBOARDING ================= -->
+  <section id="onboarding" class="screen onboarding hidden">
+    <div class="onb-card">
+      <div class="onb-logo">💞</div>
+      <h1 class="onb-title">Lovora</h1>
+      <p class="onb-sub">Ikkovingizga atalgan maxsus makon</p>
+
+      <label class="field">
+        <span>Sizning ismingiz</span>
+        <input id="onb-me" type="text" maxlength="20" placeholder="Masalan: Aziz" />
+      </label>
+      <label class="field">
+        <span>Yoringizning ismi</span>
+        <input id="onb-partner" type="text" maxlength="20" placeholder="Masalan: Malika" />
+      </label>
+      <label class="field">
+        <span>Munosabatlar boshlangan sana</span>
+        <input id="onb-date" type="date" />
+      </label>
+
+      <button id="onb-start" class="btn-primary">Boshlaymiz 💕</button>
+    </div>
+  </section>
+
+  <!-- ================= APP ================= -->
+  <main id="app" class="app hidden">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-names">
+        <span id="hdr-me">Men</span>
+        <span class="heart-beat">❤</span>
+        <span id="hdr-partner">Yor</span>
+      </div>
+      <div class="header-right">
+        <span id="conn-dot" class="conn-dot" title="Ulanmagan"></span>
+        <button id="btn-letter" class="icon-btn" title="Ochilish xati">💌</button>
+        <button id="btn-settings" class="icon-btn" title="Sozlamalar">⚙️</button>
+      </div>
+    </header>
+
+    <!-- ---------- HOME ---------- -->
+    <section id="view-home" class="view">
+      <div class="days-card">
+        <div class="candle" id="candle">
+          <div class="flame" id="flame"></div>
+          <div class="candle-body"></div>
+        </div>
+        <p class="days-label">Birga o'tkazgan kunlarimiz</p>
+        <p class="days-count" id="days-count">0</p>
+        <p class="days-since" id="days-since"></p>
+        <button id="candle-toggle" class="btn-ghost">🕯️ Shamni yoqish</button>
+      </div>
+
+      <div class="quick-grid">
+        <button class="quick" data-go="questions"><span>💬</span>Kunlik savol</button>
+        <button class="quick" data-go="notes"><span>💌</span>Sevgi xati</button>
+        <button class="quick" data-go="memories"><span>📸</span>Xotiralar</button>
+        <button class="quick" data-go="games"><span>🎮</span>O'yin</button>
+      </div>
+
+      <!-- Sirli sovg'a -->
+      <div id="surprise-card" class="surprise-card hidden">
+        <div class="surprise-glow"></div>
+        <p class="surprise-emoji">🎁</p>
+        <p class="surprise-title" id="surprise-title">Sirli sovg'a</p>
+        <p class="surprise-sub" id="surprise-sub"></p>
+        <button id="surprise-btn" class="btn-primary small hidden">Ochish 🎉</button>
+      </div>
+
+      <!-- Bizning qo'shig'imiz -->
+      <div id="song-card" class="song-card hidden">
+        <div class="song-info">
+          <span class="song-note">🎵</span>
+          <div>
+            <p class="song-eyebrow">Bizning qo'shig'imiz</p>
+            <p class="song-hint" id="song-hint">Tinglash uchun bosing</p>
+          </div>
+        </div>
+        <button id="song-toggle" class="song-play" title="Ijro">▶</button>
+      </div>
+      <div id="song-player" class="song-player hidden"></div>
+
+      <div class="daily-box">
+        <p class="daily-eyebrow">Bugungi savol</p>
+        <p class="daily-q" id="home-daily-q">...</p>
+        <button class="btn-ghost small" data-go="questions">Javob berish →</button>
+      </div>
+    </section>
+
+    <!-- ---------- QUESTIONS ---------- -->
+    <section id="view-questions" class="view hidden">
+      <h2 class="view-title">💬 Juftlik savollari</h2>
+      <div class="q-card">
+        <p class="q-cat" id="q-cat">Umumiy</p>
+        <p class="q-text" id="q-text">...</p>
+        <textarea id="q-answer" placeholder="Bu yerga javobingizni yozing..."></textarea>
+        <div class="q-actions">
+          <button id="q-save" class="btn-primary small">Saqlash</button>
+          <button id="q-next" class="btn-ghost small">Boshqa savol 🔀</button>
+        </div>
+      </div>
+      <h3 class="sub-head">Saqlangan javoblar</h3>
+      <div id="q-history" class="q-history"></div>
+    </section>
+
+    <!-- ---------- NOTES ---------- -->
+    <section id="view-notes" class="view hidden">
+      <h2 class="view-title">💌 Sevgi xatlari</h2>
+      <div class="note-compose">
+        <textarea id="note-input" placeholder="Yoringizga bir og'iz issiq so'z yozing..."></textarea>
+        <button id="note-send" class="btn-primary small">Yuborish 💕</button>
+      </div>
+      <div id="notes-list" class="notes-list"></div>
+    </section>
+
+    <!-- ---------- MEMORIES ---------- -->
+    <section id="view-memories" class="view hidden">
+      <h2 class="view-title">📸 Xotiralar tasmasi</h2>
+      <div class="mem-compose">
+        <input id="mem-title" type="text" maxlength="60" placeholder="Sarlavha (masalan: Birinchi uchrashuv)" />
+        <textarea id="mem-text" placeholder="Bu kun haqida yozing..."></textarea>
+        <div class="mem-row">
+          <label class="photo-btn">📷 Rasm qo'shish
+            <input id="mem-photo" type="file" accept="image/*" hidden />
+          </label>
+          <button id="mem-save" class="btn-primary small">Saqlash</button>
+        </div>
+        <img id="mem-preview" class="mem-preview hidden" alt="oldindan ko'rish" />
+      </div>
+      <div id="mem-list" class="mem-list"></div>
+    </section>
+
+    <!-- ---------- GAMES ---------- -->
+    <section id="view-games" class="view hidden">
+      <h2 class="view-title">🎮 Ikki kishilik o'yin</h2>
+      <p class="games-hint">Tic-Tac-Toe — bitta telefonda navbatma-navbat o'ynang</p>
+      <div class="ttt-score">
+        <span id="ttt-p1">❌ 0</span>
+        <span id="ttt-turn">Navbat: ❌</span>
+        <span id="ttt-p2">⭕ 0</span>
+      </div>
+      <div id="ttt-board" class="ttt-board"></div>
+      <p id="ttt-status" class="ttt-status"></p>
+      <button id="ttt-reset" class="btn-ghost small">Yangi o'yin 🔄</button>
+    </section>
+
+    <!-- Bottom nav -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-go="home"><span>🏠</span>Bosh</button>
+      <button class="nav-btn" data-go="questions"><span>💬</span>Savol</button>
+      <button class="nav-btn" data-go="notes"><span>💌</span>Xat</button>
+      <button class="nav-btn" data-go="memories"><span>📸</span>Xotira</button>
+      <button class="nav-btn" data-go="games"><span>🎮</span>O'yin</button>
+    </nav>
+  </main>
+
+  <!-- Settings modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Sozlamalar</h3>
+      <label class="field"><span>Sizning ismingiz</span><input id="set-me" type="text" maxlength="20" /></label>
+      <label class="field"><span>Yoringizning ismi</span><input id="set-partner" type="text" maxlength="20" /></label>
+      <label class="field"><span>Boshlangan sana</span><input id="set-date" type="date" /></label>
+      <button id="set-save" class="btn-primary small">Saqlash</button>
+
+      <div class="pair-box">
+        <h4>💑 Juftlikni ulash</h4>
+        <p id="pair-status" class="pair-status">Ulanmagan — ikki qurilmani birlashtiring</p>
+
+        <div id="pair-code-view" class="pair-code-view hidden">
+          <p class="pair-hint">Yoringizga shu kodni bering:</p>
+          <p class="pair-code" id="pair-code">------</p>
+        </div>
+
+        <button id="pair-create" class="btn-primary small">Juftlik kodi yaratish</button>
+        <div class="pair-join">
+          <input id="pair-input" type="text" maxlength="6" placeholder="Kod (masalan: K7M2QX)" />
+          <button id="pair-join-btn" class="btn-ghost small">Ulanish</button>
+        </div>
+        <button id="pair-leave" class="btn-danger small hidden">Ulanishni uzish</button>
+      </div>
+
+      <button id="set-reset" class="btn-danger small">Hammasini o'chirish</button>
+      <button id="set-close" class="btn-ghost small">Yopish</button>
+    </div>
+  </div>
+
+  <!-- Sirli sovg'a ochilganda -->
+  <div id="surprise-modal" class="surprise-modal hidden">
+    <div class="surprise-reveal">
+      <p class="surprise-emoji big">🎁</p>
+      <h3 id="sr-title"></h3>
+      <p id="sr-message" class="sr-message"></p>
+      <button id="sr-close" class="btn-primary small">💖</button>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

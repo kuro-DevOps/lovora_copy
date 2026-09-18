@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lovora",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "4210"],
+      "port": 4210
+    }
+  ]
+}
