@@ -139,6 +139,7 @@ const sync = {
     let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
     if (m.type === "authok") {
       this.coupleId = m.coupleId;
+      if (m.me) { iam = m.me; localStorage.setItem(IAM_KEY, m.me); } // login kim ekanini aniqlaydi
       localStorage.setItem(AUTH_KEY, JSON.stringify(this.creds));
       // serverdagi umumiy kontent (candle/answers/notes/memories/ttt), ismlar config'dan qoladi
       const seed = data.dailySeed, prof = data.profile;

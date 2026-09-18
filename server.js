@@ -12,14 +12,19 @@ const ROOT = __dirname;
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-// ---------- Login (parol serverda, kodda ochiq emas) ----------
-// Railway'da Variables orqali o'zgartiring: AUTH_USER, AUTH_PASS
-const AUTH = {
-  user: process.env.AUTH_USER || "Osiyo",
-  pass: process.env.AUTH_PASS || "02082026",
-};
-// Ikkalangiz uchun yagona (avtomatik) xona
+// ---------- Login: ikki alohida foydalanuvchi, bitta xona ----------
+// Har biri o'z login/parol bilan kiradi, "name" — ekranda ko'rinadigan ism.
+const USERS = [
+  { user: "Saydullo", pass: "saydullo2026", name: "Saydullo" }, // <-- parolni o'zgartiring
+  { user: "Osiyo", pass: "02082026", name: "Osiyo" },
+];
+// Ikkalangiz ulanadigan yagona xona
 const COUPLE_ROOM = process.env.COUPLE_ROOM || "LOVORA1";
+function findUser(username, password) {
+  const u = String(username || "").trim().toLowerCase();
+  const p = String(password || "");
+  return USERS.find((x) => x.user.toLowerCase() === u && x.pass === p) || null;
+}
 
 // ---------- Statik server ----------
 const MIME = {
@@ -192,9 +197,8 @@ wss.on("connection", (ws) => {
 
     // --- Login: parolni tekshiradi va avtomatik xonaga ulaydi ---
     if (m.type === "login") {
-      const okUser = String(m.username || "").trim().toLowerCase() === AUTH.user.toLowerCase();
-      const okPass = String(m.password || "") === AUTH.pass;
-      if (!okUser || !okPass) {
+      const found = findUser(m.username, m.password);
+      if (!found) {
         safeSend(ws, JSON.stringify({ type: "error", error: "badauth" }));
         return;
       }
@@ -203,7 +207,7 @@ wss.on("connection", (ws) => {
       if (!room) { room = { state: emptyState(), clients: new Set() }; rooms.set(id, room); persist(id); }
       room.clients.add(ws);
       ws.coupleId = id;
-      safeSend(ws, JSON.stringify({ type: "authok", coupleId: id, state: room.state }));
+      safeSend(ws, JSON.stringify({ type: "authok", coupleId: id, state: room.state, me: found.name }));
       broadcastPresence(id);
       return;
     }
